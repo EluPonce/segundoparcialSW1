@@ -1,93 +1,67 @@
-editor.Panels.addButton('options', [{
-  id: 'export-dart',
-  className: 'btn-export-dart',
-  label: 'Exportar a Flutter',
-  command: 'export-dart',
-}]);
+document.addEventListener('DOMContentLoaded', () => {
+    const exportButton = document.querySelector('.export-button');
 
-editor.Commands.add('export-dart', {
-  run(editor, sender) {
-    sender.set('active', false); // Desactivar botón para evitar múltiples clics
+    exportButton.addEventListener('click', () => {
+        const components = editor.getWrapper().components();
+        const flutterCode = generateFlutterCode(components);
 
-    // Obtener HTML y CSS generados
-    const rawHtml = editor.getHtml();
-    const rawCss = editor.getCss();
+        const fileName = "pantalla_generada.dart";
+        const blob = new Blob([flutterCode], { type: "text/plain;charset=utf-8" });
 
-    // Quitar etiquetas <script> del HTML (causan errores en Flutter)
-    const cleanHtml = rawHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+    });
 
-    // Escapar caracteres problemáticos para Dart (`, $, \)
-    const escapeForDart = str =>
-      str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    function generateFlutterCode(components) {
+        const codeLines = [
+            "import 'package:flutter/material.dart';",
+            "",
+            "void main() => runApp(PantallaGenerada());",
+            "",
+            "class PantallaGenerada extends StatelessWidget {",
+            "  @override",
+            "  Widget build(BuildContext context) {",
+            "    return MaterialApp(",
+            "      home: Scaffold(",
+            "        appBar: AppBar(title: Text('Interfaz Generada')),",
+            "        body: Padding(",
+            "          padding: EdgeInsets.all(16.0),",
+            "          child: Column(",
+            "            crossAxisAlignment: CrossAxisAlignment.start,",
+            "            children: ["
+        ];
 
-    const htmlEscaped = escapeForDart(cleanHtml);
-    const cssEscaped = escapeForDart(rawCss);
+        components.each(component => {
+            const tag = component.get('tagName');
+            const attrs = component.getAttributes();
+            const content = component.view?.el?.innerText?.trim() || '';
 
-    // Código Dart generado
-    const dartCode = `
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+            if (tag === 'p' || tag === 'label' || tag === 'div') {
+                codeLines.push(`              Text('${content}'),`);
+            } else if (tag === 'button') {
+                codeLines.push(`              ElevatedButton(onPressed: () {}, child: Text('${content}')),`);
+            } else if (tag === 'img') {
+                const src = attrs.src || 'https://via.placeholder.com/150';
+                codeLines.push(`              Image.network('${src}'),`);
+            } else if (tag === 'input') {
+                codeLines.push(`              TextField(decoration: InputDecoration(hintText: '${attrs.placeholder || ''}')),`);
+            } else {
+                codeLines.push("              // Componente no reconocido");
+            }
+        });
 
-class ComponenteGenerado extends StatelessWidget {
-  const ComponenteGenerado({super.key});
+        codeLines.push(
+            "            ],",
+            "          ),",
+            "        ),",
+            "      ),",
+            "    );",
+            "  }",
+            "}"
+        );
 
-  @override
-  Widget build(BuildContext context) {
-    final String contentBase64 = base64Encode(const Utf8Encoder().convert(\`
-<!DOCTYPE html>
-<html>
-  <head>
-    <style>
-      ${cssEscaped}
-    </style>
-  </head>
-  <body>
-    ${htmlEscaped}
-  </body>
-</html>
-\`));
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Vista generada')),
-      body: const WebViewWidget(),
-    );
-  }
-}
-
-class WebViewWidget extends StatefulWidget {
-  const WebViewWidget({super.key});
-
-  @override
-  State<WebViewWidget> createState() => _WebViewWidgetState();
-}
-
-class _WebViewWidgetState extends State<WebViewWidget> {
-  late final WebViewController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    final String html = utf8.decode(base64.decode(contentBase64));
-    _controller = WebViewController()
-      ..loadHtmlString(html)
-      ..setJavaScriptMode(JavaScriptMode.unrestricted);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return WebViewWidget(controller: _controller);
-  }
-}
-`;
-
-    // Crear y descargar el archivo Dart
-    const blob = new Blob([dartCode], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'componente_generado.dart';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
+        return codeLines.join("\n");
+    }
 });

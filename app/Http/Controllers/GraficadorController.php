@@ -45,46 +45,46 @@ class GraficadorController extends Controller
 
     // Guardar el nuevo registro en la base de datos
     public function store(Request $request)
-    {
-        // Validar los datos recibidos
-        $request->validate([
-            'Titulo' => 'required|string|max:255',
-            'Descripcion' => 'required|string',
-            'FechaCreacion' => 'required|date',
-            'HoraCreacion' => 'required',
-            'Estado' => 'required|integer',
-            'Contenido' => 'required|string',
-        ]);
+{
+    // Validar los datos recibidos
+    $request->validate([
+        'Titulo' => 'required|string|max:255',
+        'Descripcion' => 'required|string',
+        'FechaCreacion' => 'required|date',
+        'HoraCreacion' => 'required',
+        'Estado' => 'required|integer',
+        'Contenido' => 'required|string',
+    ]);
 
-        // Insertar en la tabla graficador y obtener el ID insertado
-        $idGraficador = DB::table('graficador')->insertGetId([
-            'Titulo' => $request->Titulo,
-            'Descripcion' => $request->Descripcion,
-            'FechaCreacion' => $request->FechaCreacion,
-            'HoraCreacion' => $request->HoraCreacion,
-            'Estado' => $request->Estado,
-            'Contenido' => $request->Contenido,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+    // Insertar en la tabla graficador y obtener el ID insertado
+    $idGraficador = DB::table('graficador')->insertGetId([
+        'Titulo' => $request->Titulo,
+        'Descripcion' => $request->Descripcion,
+        'FechaCreacion' => $request->FechaCreacion,
+        'HoraCreacion' => $request->HoraCreacion,
+        'Estado' => $request->Estado,
+        'Contenido' => $request->Contenido,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
-        // Obtener el usuario autenticado
-        $user = auth()->user();
+    // Obtener el usuario autenticado
+    $user = auth()->user();
 
-        // Insertar en la tabla graficadorusuario la relación con el usuario actual
-        DB::table('graficadorusuario')->insert([
-            'IdGraficador' => $idGraficador,
-            'Contador' => 1,
-            'IdUser' => $user->id,
-            'TipoUsuario' => 1,
-            'Fecha' => now()->toDateString(),
-            'Hora' => now()->toTimeString(),
-            'Estado' => 2,
-        ]);
+    // Insertar en la tabla graficadorusuario la relación con el usuario actual
+    DB::table('graficadorusuario')->insert([
+        'IdGraficador' => $idGraficador,
+        'Contador' => 1,
+        'IdUser' => $user->id,
+        'TipoUsuario' => 1,
+        'Fecha' => now()->toDateString(),
+        'Hora' => now()->toTimeString(),
+        'Estado' => 2,
+    ]);
 
-        // Redirigir al portal del graficador recién creado
-        return redirect()->route('graficador.portal', ['id' => $idGraficador]);
-    }
+    // Redirigir al portal del graficador recién creado
+    return redirect()->route('graficador.portal', ['id' => $idGraficador]);
+}
 
 
 
@@ -248,6 +248,7 @@ public function cambiarEstado($idGraficador, $id)
     }
 
 
+    
     public function procesarImagen(Request $request)
     {
         $request->validate([
@@ -298,7 +299,6 @@ public function cambiarEstado($idGraficador, $id)
         //]);
     }
 
-
     public function consultarGemini(string $mensajeUsuario): string
     {
 
@@ -321,7 +321,6 @@ public function cambiarEstado($idGraficador, $id)
 
         return 'Error al consultar la API de Gemini: ' . $response->status();
     }
-
     
 
 

@@ -41,7 +41,7 @@ Route::post('/exportar-dart', [GraficadorController::class, 'exportarDart']);
 
 // Ruta para importar
 
-Route::get('/graficador/importar', [GraficadorController::class, 'mostrarFormularioImportar'])->name('graficador.importar');
+Route::get('/graficador/importador', [GraficadorController::class, 'mostrarFormularioImportar'])->name('graficador.importador');
 Route::post('/graficador/procesar-imagen', [GraficadorController::class, 'procesarImagen'])->name('graficador.procesar');
 
 
