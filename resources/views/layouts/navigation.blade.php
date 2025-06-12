@@ -18,11 +18,11 @@
                 </div>
              
                 <x-nav-link :href="route('graficadores.index')" :active="request()->routeIs('graficadores.index')">
-                    CRUD graficador
+                    Graficador
                 </x-nav-link>
 
                 <x-nav-link :href="route('graficadores.lista')" :active="request()->routeIs('graficadores.lista')">
-                    Graficador Público
+                    Graficadores Público
                 </x-nav-link>
                 
                 

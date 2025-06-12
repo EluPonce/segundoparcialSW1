@@ -1,59 +1,93 @@
-// Paneles básicos (como los botones de exportar)
 editor.Panels.addButton('options', [{
-    id: 'export',
-    className: 'btn-open-export',
-    label: 'Exportar a Angular',
-    command: 'export-template-angular',  // Aquí se activará el comando export-template-angular
-    context: 'export-template-angular',
-  }]);
-  // export-component.js
+  id: 'export-dart',
+  className: 'btn-export-dart',
+  label: 'Exportar a Flutter',
+  command: 'export-dart',
+}]);
 
+editor.Commands.add('export-dart', {
+  run(editor, sender) {
+    sender.set('active', false); // Desactivar botón para evitar múltiples clics
 
-  editor.Commands.add('export-template', {
-    run(editor, sender) {
-        sender.set('active', false);  // Desactivar el botón para no hacer múltiples clics
+    // Obtener HTML y CSS generados
+    const rawHtml = editor.getHtml();
+    const rawCss = editor.getCss();
 
-        // Obtener el HTML y CSS del gráfico
-        const html = editor.getHtml();
-        const css = editor.getCss();
+    // Quitar etiquetas <script> del HTML (causan errores en Flutter)
+    const cleanHtml = rawHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
 
-        // Nombre del componente para la carpeta ZIP (podrías obtener esto dinámicamente si es necesario)
-        const componentName = 'custom-component'; // Nombre del componente Angular, puedes obtenerlo dinámicamente.
+    // Escapar caracteres problemáticos para Dart (`, $, \)
+    const escapeForDart = str =>
+      str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
 
-        // Crear el archivo HTML con el contenido del gráfico
-        const htmlBlob = new Blob([html], { type: 'text/html' });
-        const scssBlob = new Blob([css], { type: 'text/css' });
+    const htmlEscaped = escapeForDart(cleanHtml);
+    const cssEscaped = escapeForDart(rawCss);
 
-        // Crear el archivo TypeScript básico para el componente Angular
-        const tsContent = `
-import { Component } from '@angular/core';
+    // Código Dart generado
+    const dartCode = `
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
-@Component({
-  selector: 'app-${componentName}',
-  templateUrl: './component.html',
-  styleUrls: ['./component.scss']
-})
-export class CustomComponent {
-  // Aquí puedes agregar la lógica del componente si es necesario
-}`;
-        const tsBlob = new Blob([tsContent], { type: 'text/javascript' });
+class ComponenteGenerado extends StatelessWidget {
+  const ComponenteGenerado({super.key});
 
-        // Crear el archivo ZIP
-        const zip = new JSZip();
+  @override
+  Widget build(BuildContext context) {
+    final String contentBase64 = base64Encode(const Utf8Encoder().convert(\`
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      ${cssEscaped}
+    </style>
+  </head>
+  <body>
+    ${htmlEscaped}
+  </body>
+</html>
+\`));
 
-        // Agregar los archivos al ZIP
-        zip.folder(componentName)  // Crear una carpeta con el nombre del componente
-            .file('component.html', htmlBlob)
-            .file('component.scss', scssBlob)
-            .file('component.ts', tsBlob);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Vista generada')),
+      body: const WebViewWidget(),
+    );
+  }
+}
 
-        // Generar el archivo ZIP y descargar lo
-        zip.generateAsync({ type: 'blob' }).then(function(content) {
-            // Crear un enlace de descarga y hacer clic en él
-            const zipLink = document.createElement('a');
-            zipLink.href = URL.createObjectURL(content);
-            zipLink.download = `${componentName}.zip`;  // Nombre del archivo ZIP
-            zipLink.click();
-        });
-    },
+class WebViewWidget extends StatefulWidget {
+  const WebViewWidget({super.key});
+
+  @override
+  State<WebViewWidget> createState() => _WebViewWidgetState();
+}
+
+class _WebViewWidgetState extends State<WebViewWidget> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final String html = utf8.decode(base64.decode(contentBase64));
+    _controller = WebViewController()
+      ..loadHtmlString(html)
+      ..setJavaScriptMode(JavaScriptMode.unrestricted);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WebViewWidget(controller: _controller);
+  }
+}
+`;
+
+    // Crear y descargar el archivo Dart
+    const blob = new Blob([dartCode], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'componente_generado.dart';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 });

@@ -27,11 +27,11 @@ class GraficadorController extends Controller
 
         $user = auth()->user(); // Obtener el usuario autenticado
 
-$graficadores = DB::table('graficador')
-    ->join('graficadorusuario', 'graficador.IdGraficador', '=', 'graficadorusuario.IdGraficador')
-    ->where('graficadorusuario.IdUser', $user->id)
-    ->select('graficador.*') // Trae todos los campos del graficador
-    ->get();
+        $graficadores = DB::table('graficador')
+        ->join('graficadorusuario', 'graficador.IdGraficador', '=', 'graficadorusuario.IdGraficador')
+        ->where('graficadorusuario.IdUser', $user->id)
+        ->select('graficador.*') // Trae todos los campos del graficador
+        ->get();
 
         //print_r($graficadores);
         return view('graficadores.index', compact('graficadores'));
@@ -45,52 +45,47 @@ $graficadores = DB::table('graficador')
 
     // Guardar el nuevo registro en la base de datos
     public function store(Request $request)
-{
-    // Validar los datos recibidos, incluyendo los nuevos campos
-    $request->validate([
-        'Titulo' => 'required|string|max:255',
-        'Descripcion' => 'required|string',
-        'FechaCreacion' => 'required|date',
-        'HoraCreacion' => 'required',
-        'Estado' => 'required|integer',
-        'Contenido' => 'required|string',
-    ]);
-
-    // Insertar en la base de datos usando DB::table()
-    
-    $idGraficador=DB::table('graficador')->insertGetId([
-    
-        'Titulo' => $request->Titulo,
-        'Descripcion' => $request->Descripcion,
-        'FechaCreacion' => $request->FechaCreacion,
-        'HoraCreacion' => $request->HoraCreacion,
-        'Estado' => $request->Estado,
-        'Contenido' => $request->Contenido,
-        'created_at' => now(), // Fecha de creación automática
-        'updated_at' => now(), // Fecha de actualización automática
-    ]);
-
-    $user = auth()->user(); // Asegúrate de que el usuario esté autenticado
-
-        // Insertar el nuevo colaborador en la tabla graficadorusuario
-        $result = DB::table('graficadorusuario')->insert([
-            'IdGraficador' => $idGraficador,
-            'Contador' => 1,  // Ajusta esto si necesitas contar los colaboradores
-            'IdUser' => $user->id,
-            'TipoUsuario' => 1,  // O el tipo que corresponda
-            'Fecha' => now()->toDateString(),
-            'Hora' => now()->toTimeString(),
-            'Estado' => 2,  // O el estado que sea necesario
+    {
+        // Validar los datos recibidos
+        $request->validate([
+            'Titulo' => 'required|string|max:255',
+            'Descripcion' => 'required|string',
+            'FechaCreacion' => 'required|date',
+            'HoraCreacion' => 'required',
+            'Estado' => 'required|integer',
+            'Contenido' => 'required|string',
         ]);
 
+        // Insertar en la tabla graficador y obtener el ID insertado
+        $idGraficador = DB::table('graficador')->insertGetId([
+            'Titulo' => $request->Titulo,
+            'Descripcion' => $request->Descripcion,
+            'FechaCreacion' => $request->FechaCreacion,
+            'HoraCreacion' => $request->HoraCreacion,
+            'Estado' => $request->Estado,
+            'Contenido' => $request->Contenido,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-    // Redirigir al listado con un mensaje de éxito
-    return redirect()->route('graficadores.index')->with('success', 'Graficador creado y asociado exitosamente.');
+        // Obtener el usuario autenticado
+        $user = auth()->user();
 
+        // Insertar en la tabla graficadorusuario la relación con el usuario actual
+        DB::table('graficadorusuario')->insert([
+            'IdGraficador' => $idGraficador,
+            'Contador' => 1,
+            'IdUser' => $user->id,
+            'TipoUsuario' => 1,
+            'Fecha' => now()->toDateString(),
+            'Hora' => now()->toTimeString(),
+            'Estado' => 2,
+        ]);
 
-    // Redireccionar de nuevo al listado con mensaje (opcional)
-    //return redirect()->route('graficadores.index')->with('success', 'Graficador creado exitosamente.');
-}
+        // Redirigir al portal del graficador recién creado
+        return redirect()->route('graficador.portal', ['id' => $idGraficador]);
+    }
+
 
 
     // Mostrar el formulario para editar un registro
@@ -101,6 +96,7 @@ $graficadores = DB::table('graficador')
         return view('graficadores.edit', compact('graficador'));
     }
 
+    
     // Actualizar el registro en la base de datos
     public function update(Request $request, $id)
     {
@@ -131,6 +127,7 @@ $graficadores = DB::table('graficador')
 
     return view('graficadores.ListaColaboradores', compact('usuarios'));
 }
+
 public function listarUsuariosPorGraficador($idGraficador)
 {
     $usuarios = DB::table('users')
@@ -225,11 +222,18 @@ public function cambiarEstado($idGraficador, $id)
     
 
   // Método que lista todas las gráficas
-    public function PortalGraficador()
+    public function PortalGraficador($id)
+    {
+        $graficador = DB::table('graficador')->where('IdGraficador', $id)->first();
+
+        return view('graficadores.portalgraficador', compact('graficador'));
+    }
+
+    /*public function PortalGraficador()
     { 
       // Pasar los datos a la vista
       return view('graficadores.portalgraficador');
-    }
+    }*/
     public function show($id)
     {
         $graficador = Graficador::findOrFail($id);
@@ -242,8 +246,6 @@ public function cambiarEstado($idGraficador, $id)
     {
         return view('graficadores.importador');
     }
-
-
 
 
     public function procesarImagen(Request $request)
@@ -319,6 +321,8 @@ public function cambiarEstado($idGraficador, $id)
 
         return 'Error al consultar la API de Gemini: ' . $response->status();
     }
+
+    
 
 
 

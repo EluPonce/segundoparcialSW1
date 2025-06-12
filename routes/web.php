@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/usuarios-graficadores/{idGraficador}/usuarios', [GraficadorController::class, 'listarUsuariosPorGraficador'])->name('graficador.usuarios');
 
+//
 Route::post('/graficadorusuario/{idGraficador}/{id}/cambiar-estado', [GraficadorController::class, 'cambiarEstado'])
     ->name('graficadorusuario.cambiarEstado');
 
@@ -31,8 +32,12 @@ Route::post('/graficadorusuario/{idGraficador}/{id}/cambiar-estado', [Graficador
 Route::get('/graficador/lista', [GraficadorController::class, 'listatodaslasgraficas'])->name('graficadores.lista');
 // Ruta para añadir colaborador
 Route::post('/graficador/colaborador', [GraficadorController::class, 'addCollaborator']);
-Route::get('/graficador/portal', [GraficadorController::class, 'PortalGraficador']);
 
+//Route::get('/graficador/portal/{id}', [GraficadorController::class, 'PortalGraficador'])->name('graficadores.PortalGraficador');
+Route::get('/graficador/portal/{id}', [GraficadorController::class, 'PortalGraficador'])->name('graficador.portal');
+//Route::get('/graficador/portal', [GraficadorController::class, 'PortalGraficador']);
+
+Route::post('/exportar-dart', [GraficadorController::class, 'exportarDart']);
 
 // Ruta para importar
 

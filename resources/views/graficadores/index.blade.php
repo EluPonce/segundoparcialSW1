@@ -54,6 +54,10 @@
                                         class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105">
                                          Ver Usuarios
                                      </a>
+                                    <a href="{{ route('graficador.portal', ['id' => $graficador->IdGraficador]) }}" 
+                                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105">
+                                        Ir al portal
+                                    </a>
                                 </td>
                             </tr>
                         @endforeach

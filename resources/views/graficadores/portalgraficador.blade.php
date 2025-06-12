@@ -1,265 +1,184 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Lista de Graficadores') }}
-        </h2>
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-2xl text-pink-600 dark:text-pink-400 leading-tight">
+                {{ __('Portal del Graficador') }}
+            </h2>
+            <div class="space-x-4">
+                <button onclick="mostrarPestana('editor')" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">Editor</button>
+                <button onclick="mostrarPestana('importar')" class="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">Importar Imagen</button>
+            </div>
+        </div>
     </x-slot>
+
     <style>
-        body,
-        html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+        .pestana {
+            display: none;
         }
 
-        #editorjs {
-            padding: 20px;
-            height: 100vh;
-            background: #fff;
-            /* Fondo blanco */
-            border: 1px solid #ddd;
-            /* Borde gris */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            /* Sombra sutil */
-            border-radius: 8px;
+        .pestana-activa {
+            display: block;
         }
 
-        .cdx-input {
-            font-size: 16px;
-            line-height: 1.5;
-            color: #333;
-            /* Color de texto oscuro */
+        .gjs-cv-canvas {
+            height: 80vh !important;
         }
 
-        .cdx-toolbar__button {
-            background-color: #007bff;
-            /* Color de fondo de botones */
-            color: white;
-            /* Color del texto de los botones */
+        #blocks .gjs-block {
+            max-width: 100%;
+            padding: 5px;
+            font-size: 14px;
         }
 
-        .cdx-toolbar__button:hover {
-            background-color: #0056b3;
-            /* Color de fondo al pasar el ratón */
+        #gjs * {
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
-        button {
+        .export-button {
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 10px 20px;
             font-size: 16px;
-            background-color: #28a745;
+            background-color: #ec4899;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 999;
         }
 
-        button:hover {
-            background-color: #218838;
+        .export-button:hover {
+            background-color: #db2777;
         }
     </style>
-    <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet">
-    
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100" style="    height: 1500px;">
-                    <h3 class="text-xl font-semibold mb-4">PORTAL GRAFICADOR </h3>
-                    <div class="flex" style="height: 100vh;">
-                        <!-- Panel de bloques -->
-                        <div id="blocks" style="width: 300px; background: #14552d; overflow-y: auto; padding: 10px;">
-                        </div>
 
-                        <!-- Panel de botones superior y editor -->
-                        <div class="flex-1 flex flex-col">
-                            <div class="panel__top"
-                                style="padding: 10px; background: #fff; border-bottom: 1px solid #ccc;"></div>
-                            <div id="gjs" style="flex-grow: 1;"></div>
+    <link href="https://unpkg.com/grapesjs/dist/css/grapes.min.css" rel="stylesheet">
+
+    <div class="py-6 bg-pink-50 dark:bg-gray-900 min-h-screen">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            <!-- Panel del Editor -->
+            <div id="pestana-editor" class="pestana pestana-activa">
+                <div class="bg-white dark:bg-gray-800 shadow-md sm:rounded-lg p-4">
+                    <div class="flex h-[80vh]">
+                        <div id="blocks" class="bg-pink-100 dark:bg-pink-900 p-4 overflow-y-auto rounded-l-lg w-72 text-sm"></div>
+                        <div class="flex-1 flex flex-col rounded-r-lg border-l border-pink-300">
+                            <div class="panel__top bg-white dark:bg-gray-700 px-4 py-2 border-b border-pink-300"></div>
+                            <div id="gjs" class="flex-grow bg-white dark:bg-gray-900 rounded-b-lg"></div>
                         </div>
                     </div>
-
-
-
+                    <a href="{{ route('graficadores.index') }}" class="btn btn-secondary mt-4 inline-block">← Volver</a>
                 </div>
+            </div>
+
+            <!-- Panel de Importar -->
+            <div id="pestana-importar" class="pestana">
+                @include('graficadores.importador')
             </div>
         </div>
     </div>
 
-    <!-- Cargar la librería cliente de socket.io -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Botón Exportar -->
+    <button class="export-button">Exportar a Flutter</button>
 
+    <!-- Librerías -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://unpkg.com/grapesjs"></script>
     <script src="https://unpkg.com/grapesjs-blocks-basic"></script>
     <script src="https://unpkg.com/grapesjs-plugin-forms"></script>
     <script src="https://unpkg.com/grapesjs-navbar"></script>
     <script src="https://unpkg.com/grapesjs-tabs"></script>
-    
 
     <script>
-      const editor = grapesjs.init({
-        container: '#gjs', // Contenedor donde se cargará el editor
-        plugins: [
-          'gjs-blocks-basic',       // Bloques básicos
-          'grapesjs-plugin-forms',   // Plugin de formularios
-          'grapesjs-navbar',         // Navbar
-          'grapesjs-tabs'            // Tabs
-        ],
-        pluginsOpts: {
-          'gjs-blocks-basic': { flexGrid: true },  // Ajustes de los bloques básicos
-          'grapesjs-plugin-forms': {},
-          'grapesjs-navbar': {},
-          'grapesjs-tabs': {}
-        },
-        blockManager: {
-          appendTo: '#blocks', // Esto es donde quieres que se agreguen los bloques en el DOM
-          blocks: [
-            {
-              id: 'image',  // Bloque de imagen
-              label: 'Imagen',
-              content: '<img src="https://via.placeholder.com/150" alt="Imagen">',
+        // Inicializar editor
+        const editor = grapesjs.init({
+            container: '#gjs',
+            plugins: ['gjs-blocks-basic', 'grapesjs-plugin-forms', 'grapesjs-navbar', 'grapesjs-tabs'],
+            pluginsOpts: {
+                'gjs-blocks-basic': { flexGrid: true },
+                'grapesjs-plugin-forms': {},
+                'grapesjs-navbar': {},
+                'grapesjs-tabs': {}
             },
-            {
-              id: 'video',  // Bloque de video
-              label: 'Video',
-              content: `
-                <div data-gjs-type="default">
-                  <iframe 
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen
-                    style="width:100%; height:315px;">
-                  </iframe>
-                </div>
-              `,
-            },
-            {
-              id: 'button',  // Bloque de botón
-              label: 'Botón',
-              content: '<button class="btn btn-primary">Haz clic aquí</button>',
-            },
-            {
-              id: 'form',  // Bloque de formulario
-              label: 'Formulario',
-              content: `
-                <form>
-                  <div class="form-group">
-                    <label for="name">Nombre</label>
-                    <input type="text" class="form-control" id="name" placeholder="Tu nombre">
-                  </div>
-                  <div class="form-group">
-                    <label for="email">Correo electrónico</label>
-                    <input type="email" class="form-control" id="email" placeholder="Tu correo">
-                  </div>
-                  <button type="submit" class="btn btn-primary">Enviar</button>
-                </form>
-              `,
-            },
-          ],
-        },
-      });    
-
-
-        // Activar el evento del botón de exportar
-        editor.Panels.addButton('options', [{
-            id: 'export',
-            className: 'btn-open-export',
-            label: 'Exportar',
-            command: 'export-template',
-            context: 'export-template',
-        }]);
-
-
-        // Comando para exportar los archivos de Angular
-
-
-
-        // Conectarse al servidor WebSocket
-        const socket = io('http://localhost:3000', {
-            transports: ['websocket'],
+            blockManager: {
+                appendTo: '#blocks',
+                blocks: [
+                    {
+                        id: 'image',
+                        label: 'Imagen',
+                        content: '<img src="https://via.placeholder.com/150" alt="Imagen" style="max-width:100%; height:auto;">'
+                    },
+                    {
+                        id: 'video',
+                        label: 'Video',
+                        content: `<div data-gjs-type="default">
+                                    <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0"
+                                        allowfullscreen style="width:100%; height:315px;"></iframe>
+                                  </div>`
+                    },
+                    {
+                        id: 'button',
+                        label: 'Botón',
+                        content: '<button class="btn btn-primary" style="padding: 6px 12px;">Haz clic aquí</button>'
+                    },
+                    {
+                        id: 'form',
+                        label: 'Formulario',
+                        content: `
+                            <form style="max-width: 100%;">
+                                <div class="form-group">
+                                    <label for="name">Nombre</label>
+                                    <input type="text" class="form-control" id="name" placeholder="Tu nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Correo</label>
+                                    <input type="email" class="form-control" id="email" placeholder="Tu correo">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Enviar</button>
+                            </form>
+                        `
+                    }
+                ]
+            }
         });
 
-        socket.on('connect', () => {
-            console.log('Conectado al servidor WebSocket');
+        // Botón Exportar
+        document.querySelector('.export-button').addEventListener('click', () => {
+            editor.runCommand('export-dart');
         });
 
-        // Escuchar mensajes desde el servidor
-        socket.on('mensaje', (data) => {
-            console.log('Mensaje del servidor:', data);
-
-        });
+        // WebSocket
+        const socket = io('http://localhost:3000', { transports: ['websocket'] });
+        socket.on('connect', () => console.log('Conectado al WebSocket'));
         let isUpdating = false;
 
-        // Emite un cambio cada vez que se agrega un nuevo componente
-        editor.on('component:add', (component) => {
+        const emitGraphUpdate = () => {
             if (!isUpdating) {
-                console.log('Nuevo componente agregado:', component);
-                socket.emit('graph-update', {
-                    data: component.toJSON()
-                }); // Enviar datos del componente
+                const fullData = editor.getComponents();
+                socket.emit('graph-update', { data: fullData });
             }
-        });
+        };
 
-        // Emite un cambio cada vez que se agrega un nuevo componente
-        editor.on('component:add', (component) => {
-            console.log('Nuevo componente agregado:', component);
+        editor.on('component:add', emitGraphUpdate);
+        editor.on('component:update', emitGraphUpdate);
+        editor.on('storage:update', emitGraphUpdate);
 
-            // Obtener toda la estructura del gráfico
-
-            if (!isUpdating) {
-                console.log('Nuevo componente agregado:', component);
-                const fullData = editor.getComponents(); // Obtener todos los componentes del editor
-
-                // Emitir el gráfico completo al servidor para que se envíe a otros clientes
-                socket.emit('graph-update', {
-                    data: fullData
-                });
-            }
-
-        });
-
-
-
-        // Emite un cambio cada vez que se actualiza un componente
-        editor.on('component:update', (model) => {
-            if (!isUpdating) {
-                const fullData = editor.getComponents(); // Obtener todos los componentes del editor
-
-                // Emitir el gráfico completo al servidor para que se envíe a otros clientes
-                socket.emit('graph-update', {
-                    data: fullData
-                });
-            }
-        });
-
-        // Si el diseño del gráfico cambia, también puedes emitir un evento
-        editor.on('storage:update', (data) => {
-            if (!isUpdating) {
-                console.log('Diseño actualizado:', data);
-                socket.emit('graph-update', {
-                    data: data
-                }); // Enviar datos del gráfico completo
-            }
-        });
-
-        // Escuchar las actualizaciones del gráfico desde el servidor WebSocket
         socket.on('graph-update', (data) => {
-            console.log('Recibiendo actualización del gráfico de otro cliente:', data);
-
-            // Evitar que se emita un cambio cuando estamos recibiendo una actualización de otro cliente
             isUpdating = true;
-            editor.setComponents(data.data); // Ajusta esto si tu estructura de datos es diferente
-            isUpdating = false; // Restablecer la bandera después de actualizar
+            editor.setComponents(data.data);
+            isUpdating = false;
         });
+
+        // Pestañas
+        function mostrarPestana(id) {
+            document.querySelectorAll('.pestana').forEach(p => p.classList.remove('pestana-activa'));
+            document.getElementById('pestana-' + id).classList.add('pestana-activa');
+        }
     </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.8.0/jszip.min.js"></script>
-
-    <!-- En tu archivo Blade -->
-    <script src="{{ asset('exportcomponenteangular.js') }}"></script>
-
-
+    <script src="{{ asset('exportcomponenteflutter.js') }}"></script>
 </x-app-layout>
